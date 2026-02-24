@@ -1,15 +1,10 @@
-.logo.vanilla:hover {
-  filter: drop-shadow(0 0 2em #ffe21c);
-}
+/* ========== 全局与窗口（配合 Tauri transparent: true） ========== */
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
+  font-family: Inter, Avenir, "Microsoft YaHei", Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
   font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
+  color: #1a1a1a;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,96 +12,279 @@
   -webkit-text-size-adjust: 100%;
 }
 
-.container {
+body {
   margin: 0;
-  padding-top: 10vh;
+  padding: 0;
+  width: 320px;
+  height: 400px;
+  min-width: 320px;
+  min-height: 400px;
+  max-width: 320px;
+  max-height: 400px;
+  overflow: hidden;
+  box-sizing: border-box;
+  /* 半透明背景，与 Tauri 无边框透明窗口配合 */
+  background-color: rgba(255, 255, 255, 0.92);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* 根布局：标题栏 + 列表区 + 添加表单 */
+body {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
+/* ========== 标题栏与置顶按钮 ========== */
+.title-bar {
+  flex-shrink: 0;
+  min-height: 32px;
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 0 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+.title-bar-drag {
+  flex: 1;
+  min-height: 32px;
+  /* 可拖动区域，占满除按钮外的空间 */
 }
 
-a:hover {
-  color: #535bf2;
+.btn-pin {
+  flex-shrink: 0;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
 
-h1 {
-  text-align: center;
+.btn-pin:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: #1a1a1a;
 }
 
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+.btn-pin:active {
+  background: rgba(0, 0, 0, 0.1);
 }
 
-button {
+/* ========== 列表区域（可滚动） ========== */
+#todo-list,
+.todo-list {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 8px;
+  list-style: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 单条列表项：勾选框 + 文案 + 删除按钮 */
+#todo-list > li,
+.todo-list > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 4px;
+  border-radius: 4px;
+  min-height: 32px;
+}
+
+#todo-list > li:hover,
+.todo-list > li:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* 勾选框 */
+#todo-list > li input[type="checkbox"],
+.todo-list > li input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
 }
 
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
+/* 文案区域：长文案换行，不撑破窗口 */
+#todo-list > li .todo-text,
+#todo-list > li span,
+.todo-list > li .todo-text,
+.todo-list > li span {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
 }
 
-input,
-button {
+/* 已完成项：灰色 + 删除线 */
+#todo-list > li.done .todo-text,
+#todo-list > li.done span,
+#todo-list > li input[type="checkbox"]:checked ~ .todo-text,
+#todo-list > li input[type="checkbox"]:checked ~ span,
+.todo-list > li.done .todo-text,
+.todo-list > li.done span,
+.todo-list > li input[type="checkbox"]:checked ~ .todo-text,
+.todo-list > li input[type="checkbox"]:checked ~ span {
+  color: #888;
+  text-decoration: line-through;
+}
+
+/* 删除按钮 */
+#todo-list > li .todo-delete,
+#todo-list > li button,
+.todo-list > li .todo-delete,
+.todo-list > li button {
+  flex-shrink: 0;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  font-size: 12px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+#todo-list > li button:hover,
+.todo-list > li button:hover {
+  background: rgba(200, 60, 60, 0.12);
+  color: #c03030;
+}
+
+#todo-list > li button:active,
+.todo-list > li button:active {
+  background: rgba(200, 60, 60, 0.2);
+}
+
+/* ========== 底部添加待办表单 ========== */
+.add-todo,
+#add-todo-form {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+#add-todo-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+#add-todo-input::placeholder {
+  color: #999;
+}
+
+#add-todo-input:focus {
   outline: none;
+  border-color: #396cd8;
 }
 
-#greet-input {
-  margin-right: 5px;
+#add-todo-btn {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
+  cursor: pointer;
 }
 
+#add-todo-btn:hover {
+  border-color: #396cd8;
+  color: #396cd8;
+}
+
+#add-todo-btn:active {
+  background: rgba(57, 108, 216, 0.08);
+}
+
+/* ========== 深色主题等效（可选） ========== */
 @media (prefers-color-scheme: dark) {
+  body {
+    background-color: rgba(30, 30, 30, 0.92);
+  }
+
   :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
+    color: #e8e8e8;
   }
 
-  a:hover {
-    color: #24c8db;
+  .title-bar {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
   }
 
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
+  .btn-pin {
+    color: #aaa;
   }
-  button:active {
-    background-color: #0f0f0f69;
+
+  .btn-pin:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #e8e8e8;
+  }
+
+  #todo-list > li .todo-text,
+  #todo-list > li span,
+  .todo-list > li .todo-text,
+  .todo-list > li span {
+    color: #e8e8e8;
+  }
+
+  #todo-list > li.done .todo-text,
+  #todo-list > li.done span,
+  .todo-list > li.done .todo-text,
+  .todo-list > li.done span {
+    color: #888;
+  }
+
+  .add-todo,
+  #add-todo-form {
+    border-top-color: rgba(255, 255, 255, 0.1);
+    background: rgba(30, 30, 30, 0.6);
+  }
+
+  #add-todo-input {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: #2a2a2a;
+    color: #e8e8e8;
+  }
+
+  #add-todo-input::placeholder {
+    color: #666;
+  }
+
+  #add-todo-btn {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: #2a2a2a;
+    color: #e8e8e8;
+  }
+
+  #add-todo-btn:hover {
+    border-color: #6b9aff;
+    color: #6b9aff;
   }
 }
