@@ -23,6 +23,34 @@ fn save_todos(app: tauri::AppHandle, todos: Vec<storage::Todo>) -> Result<(), St
     storage::save_todos(&app, &todos)
 }
 
+/// 设置主窗口是否始终置顶，并将当前窗口位置与新的 always_on_top 写回 window.json。
+/// 供前端 invoke('set_always_on_top', { body: { enabled } }) 调用。
+#[tauri::command]
+fn set_always_on_top(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    let main = app
+        .get_webview_window("main")
+        .ok_or_else(|| "主窗口不存在".to_string())?;
+    main.set_always_on_top(enabled).map_err(|e| e.to_string())?;
+
+    // 从窗口 API 读取当前位置，与新的 always_on_top 一并写回 window.json
+    let (x, y) = main
+        .outer_position()
+        .map(|p| (p.x, p.y))
+        .unwrap_or_else(|_| {
+            // 读取失败时使用已保存的配置或默认值
+            storage::load_window_config(&app)
+                .map(|c| (c.x, c.y))
+                .unwrap_or((100, 100))
+        });
+    let config = storage::WindowConfig {
+        x,
+        y,
+        always_on_top: enabled,
+    };
+    storage::save_window_config(&app, &config)?;
+    Ok(())
+}
+
 /// 简单边界检查：窗口 (x, y, width, height) 是否至少部分在给定显示器范围内。
 /// 若无法获取显示器则视为通过（不校验）。
 fn is_position_valid_on_monitor(
@@ -44,7 +72,7 @@ fn is_position_valid_on_monitor(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos])
+        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, set_always_on_top])
         .setup(|app| {
             // 启动时从 window.json 恢复窗口位置与置顶状态
             let config = match storage::load_window_config(app) {
