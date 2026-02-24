@@ -1,5 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 
+mod autostart;
 mod storage;
 
 use std::sync::mpsc;
@@ -35,6 +36,13 @@ fn start_dragging(app: tauri::AppHandle) -> Result<(), String> {
         .get_webview_window("main")
         .ok_or_else(|| "主窗口不存在".to_string())?;
     main.start_dragging().map_err(|e| e.to_string())
+}
+
+/// 设置是否开机启动（仅 Windows：写/删 HKCU\\...\\Run 注册表）。
+/// 供前端 invoke('set_autostart', { body: { enabled } }) 调用；非 Windows 返回 Err("仅支持 Windows")。
+#[tauri::command]
+fn set_autostart(enabled: bool) -> Result<(), String> {
+    autostart::set_autostart_impl(enabled)
 }
 
 /// 设置主窗口是否始终置顶，并将当前窗口位置与新的 always_on_top 写回 window.json。
@@ -86,7 +94,7 @@ fn is_position_valid_on_monitor(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, start_dragging, set_always_on_top])
+        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, start_dragging, set_autostart, set_always_on_top])
         .setup(|app| {
             // 启动时从 window.json 恢复窗口位置与置顶状态
             let config = match storage::load_window_config(app) {
