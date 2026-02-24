@@ -162,8 +162,8 @@ fn default_window_config() -> WindowConfig {
 /// - 路径通过 `window_config_path(&app)` 获取；若解析路径失败则返回 `Err`。
 /// - 文件不存在或解析失败（无效 JSON）时返回默认值（x: 100, y: 100, always_on_top: true）。
 /// - 缺字段时用默认值补全。
-pub fn load_window_config(app: AppHandle) -> Result<WindowConfig, String> {
-    let path = window_config_path(&app).map_err(|e| e.to_string())?;
+pub fn load_window_config<M: Manager<R>, R: Runtime>(app: &M) -> Result<WindowConfig, String> {
+    let path = window_config_path(app).map_err(|e| e.to_string())?;
     let contents = match std::fs::read_to_string(&path) {
         Ok(c) => c,
         Err(e) if e.kind() == ErrorKind::NotFound => return Ok(default_window_config()),

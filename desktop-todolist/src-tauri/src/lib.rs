@@ -2,6 +2,9 @@
 
 mod storage;
 
+use tauri::Manager;
+use tauri::PhysicalPosition;
+
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
@@ -20,11 +23,71 @@ fn save_todos(app: tauri::AppHandle, todos: Vec<storage::Todo>) -> Result<(), St
     storage::save_todos(&app, &todos)
 }
 
+/// 简单边界检查：窗口 (x, y, width, height) 是否至少部分在给定显示器范围内。
+/// 若无法获取显示器则视为通过（不校验）。
+fn is_position_valid_on_monitor(
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    mon_pos: (i32, i32),
+    mon_size: (u32, u32),
+) -> bool {
+    let (mx, my) = mon_pos;
+    let (mw, mh) = mon_size;
+    let x_overlap = x < (mx + mw as i32) && (x + width as i32) > mx;
+    let y_overlap = y < (my + mh as i32) && (y + height as i32) > my;
+    x_overlap && y_overlap
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos])
+        .setup(|app| {
+            // 启动时从 window.json 恢复窗口位置与置顶状态
+            let config = match storage::load_window_config(app) {
+                Ok(c) => c,
+                Err(_) => return Ok(()),
+            };
+
+            let main = match app.get_webview_window("main") {
+                Some(w) => w,
+                None => return Ok(()),
+            };
+
+            // 置顶状态
+            let _ = main.set_always_on_top(config.always_on_top);
+
+            // 位置：有效 x,y 且通过简单边界检查则设置
+            let width = 320u32;
+            let height = 400u32;
+            let valid = if let Ok(Some(mon)) = main.primary_monitor() {
+                let pos = mon.position();
+                let size = mon.size();
+                is_position_valid_on_monitor(
+                    config.x,
+                    config.y,
+                    width,
+                    height,
+                    (pos.x as i32, pos.y as i32),
+                    (size.width, size.height),
+                )
+            } else {
+                // 无法获取显示器时做数值范围检查，避免明显越界
+                config.x >= -32768
+                    && config.x <= 32767
+                    && config.y >= -32768
+                    && config.y <= 32767
+            };
+
+            if valid {
+                let _ = main.set_position(PhysicalPosition::new(config.x as f64, config.y as f64));
+            }
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
