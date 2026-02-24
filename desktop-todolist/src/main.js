@@ -3,6 +3,9 @@ const { invoke } = window.__TAURI__.core;
 /** 当前内存中的待办列表，load 后赋值，增删改后更新再 save_todos */
 let todos = [];
 
+/** 当前是否始终置顶（与 window.json 一致，默认 true；后端无查询接口，由前端记录） */
+let alwaysOnTop = true;
+
 /**
  * 按 order 排序后的待办数组（不修改原数组）
  * @param {Array<{ id: string, text: string, done: boolean, order: number }>} list
@@ -178,10 +181,46 @@ async function handleToggleDone(id, done, listEl) {
   }
 }
 
+/**
+ * 根据当前置顶状态更新 #btn-pin 的文案与样式
+ * @param {HTMLButtonElement} btn - #btn-pin 元素
+ * @param {boolean} enabled - 是否置顶
+ */
+function updatePinButton(btn, enabled) {
+  if (!btn) return;
+  btn.textContent = enabled ? "已置顶" : "置顶";
+  btn.classList.toggle("is-pinned", !!enabled);
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   const listEl = document.querySelector("#todo-list");
   const form = document.querySelector("#add-todo-form");
+  const titleBarDrag = document.querySelector(".title-bar-drag");
+  const btnPin = document.querySelector("#btn-pin");
   if (!listEl) return;
+
+  // 标题栏拖动：data-tauri-drag-region 在 Tauri 2 无边框下可能已生效，此处 mousedown+invoke 作为兼容/兜底
+  if (titleBarDrag) {
+    titleBarDrag.addEventListener("mousedown", () => {
+      invoke("start_dragging").catch((e) => console.error("start_dragging failed:", e));
+    });
+  }
+
+  // 置顶按钮：点击取反状态，调用后端并更新按钮
+  if (btnPin) {
+    updatePinButton(btnPin, alwaysOnTop);
+    btnPin.addEventListener("click", async () => {
+      alwaysOnTop = !alwaysOnTop;
+      try {
+        await invoke("set_always_on_top", { body: { enabled: alwaysOnTop } });
+        updatePinButton(btnPin, alwaysOnTop);
+      } catch (e) {
+        console.error("set_always_on_top failed:", e);
+        alwaysOnTop = !alwaysOnTop;
+        updatePinButton(btnPin, alwaysOnTop);
+      }
+    });
+  }
 
   loadAndRenderTodos(listEl);
 

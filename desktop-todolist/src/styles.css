@@ -79,6 +79,13 @@ body {
   background: rgba(0, 0, 0, 0.1);
 }
 
+/* 置顶开启时的按钮高亮 */
+.btn-pin.is-pinned {
+  background: rgba(0, 0, 0, 0.08);
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
 /* ========== 列表区域（可滚动） ========== */
 #todo-list,
 .todo-list {
