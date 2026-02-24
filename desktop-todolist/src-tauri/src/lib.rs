@@ -23,6 +23,16 @@ fn save_todos(app: tauri::AppHandle, todos: Vec<storage::Todo>) -> Result<(), St
     storage::save_todos(&app, &todos)
 }
 
+/// 开始拖动主窗口（供无边框窗口标题栏 mousedown 时调用）。
+/// 内部获取主窗口并调用 Tauri 的 start_dragging()，由系统接管拖动。
+#[tauri::command]
+fn start_dragging(app: tauri::AppHandle) -> Result<(), String> {
+    let main = app
+        .get_webview_window("main")
+        .ok_or_else(|| "主窗口不存在".to_string())?;
+    main.start_dragging().map_err(|e| e.to_string())
+}
+
 /// 设置主窗口是否始终置顶，并将当前窗口位置与新的 always_on_top 写回 window.json。
 /// 供前端 invoke('set_always_on_top', { body: { enabled } }) 调用。
 #[tauri::command]
@@ -72,7 +82,7 @@ fn is_position_valid_on_monitor(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, set_always_on_top])
+        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, start_dragging, set_always_on_top])
         .setup(|app| {
             // 启动时从 window.json 恢复窗口位置与置顶状态
             let config = match storage::load_window_config(app) {
