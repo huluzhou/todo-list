@@ -43,8 +43,45 @@ pub fn set_autostart_impl(enabled: bool) -> Result<(), String> {
     Ok(())
 }
 
+/// 查询当前是否已启用开机启动（仅 Windows：读 Run 键是否存在且值为当前 exe）。
+#[cfg(windows)]
+pub fn is_autostart_enabled_impl() -> Result<bool, String> {
+    use std::env;
+    use winreg::enums::KEY_READ;
+    use winreg::RegKey;
+
+    const RUN_VALUE_NAME: &str = "desktop-todolist";
+
+    let exe_path = env::current_exe().map_err(|e| format!("获取 exe 路径失败: {}", e))?;
+    let exe_str = exe_path
+        .to_str()
+        .ok_or_else(|| "exe 路径含非法字符".to_string())?;
+    let value = if exe_str.contains(' ') {
+        format!("\"{}\"", exe_str)
+    } else {
+        exe_str.to_string()
+    };
+
+    let hkcu = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
+    let run_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+    let run_key = hkcu
+        .open_subkey_with_flags(run_path, KEY_READ)
+        .map_err(|e| format!("打开注册表 Run 键失败: {}", e))?;
+
+    let current: String = run_key
+        .get_value(RUN_VALUE_NAME)
+        .unwrap_or_default();
+    Ok(current.trim() == value.trim())
+}
+
 #[cfg(not(windows))]
 #[allow(dead_code)]
 pub fn set_autostart_impl(_enabled: bool) -> Result<(), String> {
     Err("仅支持 Windows".to_string())
+}
+
+#[cfg(not(windows))]
+#[allow(dead_code)]
+pub fn is_autostart_enabled_impl() -> Result<bool, String> {
+    Ok(false)
 }

@@ -212,12 +212,33 @@ window.addEventListener("DOMContentLoaded", () => {
     btnPin.addEventListener("click", async () => {
       alwaysOnTop = !alwaysOnTop;
       try {
-        await invoke("set_always_on_top", { body: { enabled: alwaysOnTop } });
+        await invoke("set_always_on_top", { enabled: alwaysOnTop });
         updatePinButton(btnPin, alwaysOnTop);
       } catch (e) {
         console.error("set_always_on_top failed:", e);
         alwaysOnTop = !alwaysOnTop;
         updatePinButton(btnPin, alwaysOnTop);
+      }
+    });
+  }
+
+  // 开机启动开关：加载时同步状态，变更时调用后端
+  const autostartCheckbox = document.querySelector("#autostart-checkbox");
+  if (autostartCheckbox) {
+    invoke("is_autostart_enabled")
+      .then((enabled) => {
+        autostartCheckbox.checked = !!enabled;
+      })
+      .catch(() => {
+        autostartCheckbox.checked = false;
+      });
+    autostartCheckbox.addEventListener("change", async () => {
+      const enabled = autostartCheckbox.checked;
+      try {
+        await invoke("set_autostart", { enabled });
+      } catch (e) {
+        console.error("set_autostart failed:", e);
+        autostartCheckbox.checked = !enabled;
       }
     });
   }

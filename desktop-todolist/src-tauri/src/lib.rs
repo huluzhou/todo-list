@@ -39,10 +39,16 @@ fn start_dragging(app: tauri::AppHandle) -> Result<(), String> {
 }
 
 /// 设置是否开机启动（仅 Windows：写/删 HKCU\\...\\Run 注册表）。
-/// 供前端 invoke('set_autostart', { body: { enabled } }) 调用；非 Windows 返回 Err("仅支持 Windows")。
+/// 供前端 invoke('set_autostart', { enabled }) 调用；非 Windows 返回 Err("仅支持 Windows")。
 #[tauri::command]
 fn set_autostart(enabled: bool) -> Result<(), String> {
     autostart::set_autostart_impl(enabled)
+}
+
+/// 查询当前是否已启用开机启动（仅 Windows 有效；非 Windows 返回 false）。
+#[tauri::command]
+fn is_autostart_enabled() -> Result<bool, String> {
+    autostart::is_autostart_enabled_impl()
 }
 
 /// 设置主窗口是否始终置顶，并将当前窗口位置与新的 always_on_top 写回 window.json。
@@ -94,7 +100,7 @@ fn is_position_valid_on_monitor(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, start_dragging, set_autostart, set_always_on_top])
+        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, start_dragging, set_autostart, is_autostart_enabled, set_always_on_top])
         .setup(|app| {
             // 启动时从 window.json 恢复窗口位置与置顶状态
             let config = match storage::load_window_config(app) {
@@ -134,6 +140,12 @@ pub fn run() {
 
             if valid {
                 let _ = main.set_position(PhysicalPosition::new(config.x as f64, config.y as f64));
+            }
+
+            // 默认开机启动：首次运行（当前未启用开机启动）时自动启用（仅 Windows）
+            #[cfg(windows)]
+            if let Ok(false) = autostart::is_autostart_enabled_impl() {
+                let _ = autostart::set_autostart_impl(true);
             }
 
             // 监听主窗口位置变化（含拖动结束），防抖后写回 window.json
