@@ -1,39 +1,32 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
+    <title>待办</title>
     <script type="module" src="/main.js" defer></script>
   </head>
 
   <body>
-    <main class="container">
-      <h1>Welcome to Tauri</h1>
+    <!-- 标题栏：可拖动区域 + 置顶按钮 -->
+    <header class="title-bar">
+      <div class="title-bar-drag" data-tauri-drag-region></div>
+      <button type="button" class="btn-pin" id="btn-pin" title="切换始终置顶">置顶</button>
+    </header>
 
-      <div class="row">
-        <a href="https://tauri.app" target="_blank">
-          <img src="/assets/tauri.svg" class="logo tauri" alt="Tauri logo" />
-        </a>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"
-          target="_blank"
-        >
-          <img
-            src="/assets/javascript.svg"
-            class="logo vanilla"
-            alt="JavaScript logo"
-          />
-        </a>
-      </div>
-      <p>Click on the Tauri logo to learn more about the framework</p>
+    <!-- 待办列表容器，列表项由 JS 动态渲染 -->
+    <ul id="todo-list" class="todo-list"></ul>
 
-      <form class="row" id="greet-form">
-        <input id="greet-input" placeholder="Enter a name..." />
-        <button type="submit">Greet</button>
-      </form>
-      <p id="greet-msg"></p>
-    </main>
+    <!-- 底部：添加待办区 -->
+    <form id="add-todo-form" class="add-todo">
+      <input
+        id="add-todo-input"
+        type="text"
+        placeholder="添加待办"
+        autocomplete="off"
+      />
+      <button type="submit" id="add-todo-btn">添加</button>
+    </form>
   </body>
 </html>
