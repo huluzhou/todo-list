@@ -87,6 +87,17 @@ pub fn load_todos(app: AppHandle) -> Result<Vec<Todo>, String> {
     Ok(todos)
 }
 
+/// 将完整待办列表写入应用数据目录下的 `todos.json`。
+///
+/// - 路径通过 `todos_json_path(&app)` 获取（该函数保证目录存在）。
+/// - 写失败时返回 `Err(String)`，供前端提示「保存失败，请重试」。
+pub fn save_todos<M: Manager<R>, R: Runtime>(app: &M, todos: &[Todo]) -> Result<(), String> {
+    let path = todos_json_path(app).map_err(|e| e.to_string())?;
+    let json = serde_json::to_string_pretty(todos).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
