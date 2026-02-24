@@ -2,8 +2,12 @@
 
 mod storage;
 
+use std::sync::mpsc;
+use std::time::Duration;
+
 use tauri::Manager;
 use tauri::PhysicalPosition;
+use tauri::WindowEvent;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -123,6 +127,39 @@ pub fn run() {
             if valid {
                 let _ = main.set_position(PhysicalPosition::new(config.x as f64, config.y as f64));
             }
+
+            // 监听主窗口位置变化（含拖动结束），防抖后写回 window.json
+            let (tx, rx) = mpsc::channel();
+            let app_handle = app.handle().clone();
+            main.on_window_event(move |event| {
+                if let WindowEvent::Moved(_) = event {
+                    let _ = tx.send(());
+                }
+            });
+            std::thread::spawn(move || {
+                while rx.recv().is_ok() {
+                    // 防抖：等待 300ms，期间若有新的 Moved 则继续等待
+                    loop {
+                        std::thread::sleep(Duration::from_millis(300));
+                        if rx.try_recv().is_err() {
+                            break;
+                        }
+                    }
+                    let handle = app_handle.clone();
+                    let _ = app_handle.run_on_main_thread(move || {
+                        if let Some(m) = handle.get_webview_window("main") {
+                            let (x, y) = m.outer_position().map(|p| (p.x, p.y)).unwrap_or((100, 100));
+                            let always_on_top = m.is_always_on_top().unwrap_or(true);
+                            let config = storage::WindowConfig {
+                                x,
+                                y,
+                                always_on_top,
+                            };
+                            let _ = storage::save_window_config(&handle, &config);
+                        }
+                    });
+                }
+            });
 
             Ok(())
         })
