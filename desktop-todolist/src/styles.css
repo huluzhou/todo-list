@@ -91,9 +91,17 @@ body {
   overflow-x: hidden;
 }
 
+/* 空列表占位文案 */
+#todo-list > li.todo-empty,
+.todo-list > li.todo-empty {
+  color: #888;
+  padding: 12px 4px;
+  pointer-events: none;
+}
+
 /* 单条列表项：勾选框 + 文案 + 删除按钮 */
-#todo-list > li,
-.todo-list > li {
+#todo-list > li:not(.todo-empty),
+.todo-list > li:not(.todo-empty) {
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -127,6 +135,27 @@ body {
   white-space: normal;
   word-break: break-word;
   line-height: 1.4;
+}
+
+/* 行内编辑输入框：与文案区域同宽同风格 */
+#todo-list > li .todo-edit-input,
+.todo-list > li .todo-edit-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 2px;
+  font-size: inherit;
+  font-family: inherit;
+  line-height: 1.4;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  background: #fff;
+  color: inherit;
+}
+
+#todo-list > li .todo-edit-input:focus,
+.todo-list > li .todo-edit-input:focus {
+  outline: none;
+  border-color: #396cd8;
 }
 
 /* 已完成项：灰色 + 删除线 */

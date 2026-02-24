@@ -1,17 +1,26 @@
 const { invoke } = window.__TAURI__.core;
 
-/**
- * 从后端加载待办列表，按 order 排序后渲染到 #todo-list
- * @param {HTMLUListElement} listEl - #todo-list 容器
- */
-async function loadAndRenderTodos(listEl) {
-  const list = await invoke("load_todos");
-  const todos = Array.isArray(list) ? list : [];
-  const sorted = [...todos].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+/** 当前内存中的待办列表，load 后赋值，增删改后更新再 save_todos */
+let todos = [];
 
+/**
+ * 按 order 排序后的待办数组（不修改原数组）
+ * @param {Array<{ id: string, text: string, done: boolean, order: number }>} list
+ * @returns {Array}
+ */
+function sortedTodos(list) {
+  return [...(list || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
+/**
+ * 将待办数组渲染到 #todo-list
+ * @param {HTMLUListElement} listEl - #todo-list 容器
+ * @param {Array<{ id: string, text: string, done: boolean, order: number }>} list - 已排序的待办列表
+ */
+function renderTodos(listEl, list) {
   listEl.innerHTML = "";
 
-  if (sorted.length === 0) {
+  if (!list || list.length === 0) {
     const emptyLi = document.createElement("li");
     emptyLi.className = "todo-empty";
     emptyLi.textContent = "暂无待办";
@@ -19,8 +28,9 @@ async function loadAndRenderTodos(listEl) {
     return;
   }
 
-  for (const todo of sorted) {
+  for (const todo of list) {
     const li = document.createElement("li");
+    li.dataset.id = todo.id;
     if (todo.done) li.classList.add("done");
 
     const checkbox = document.createElement("input");
@@ -45,8 +55,165 @@ async function loadAndRenderTodos(listEl) {
   }
 }
 
+/**
+ * 调用 save_todos 持久化当前 todos，成功后重渲染；失败则提示
+ * @param {HTMLUListElement} listEl - #todo-list 容器
+ */
+async function saveTodosAndRender(listEl) {
+  try {
+    await invoke("save_todos", { todos });
+    renderTodos(listEl, sortedTodos(todos));
+  } catch (e) {
+    console.error("save_todos failed:", e);
+    alert("保存失败，请重试");
+  }
+}
+
+/**
+ * 从后端加载待办并赋给内存列表，再渲染
+ * @param {HTMLUListElement} listEl - #todo-list 容器
+ */
+async function loadAndRenderTodos(listEl) {
+  try {
+    const list = await invoke("load_todos");
+    todos = Array.isArray(list) ? list : [];
+    renderTodos(listEl, sortedTodos(todos));
+  } catch (e) {
+    console.error("load_todos failed:", e);
+    todos = [];
+    renderTodos(listEl, []);
+  }
+}
+
+/**
+ * 添加待办：校验非空，生成 id/order，追加到 todos，save_todos，重渲染，清空输入
+ * @param {HTMLFormElement} form - #add-todo-form
+ * @param {HTMLUListElement} listEl - #todo-list
+ */
+async function handleAddTodo(form, listEl) {
+  const input = form.querySelector("#add-todo-input");
+  const text = (input?.value ?? "").trim();
+  if (!text) return;
+
+  const newTodo = {
+    id: crypto.randomUUID(),
+    text,
+    done: false,
+    order: todos.length,
+  };
+  todos.push(newTodo);
+  await saveTodosAndRender(listEl);
+  if (input) input.value = "";
+}
+
+/**
+ * 删除待办：从 todos 中按 id 移除，save_todos，重渲染
+ * @param {string} id - todo.id
+ * @param {HTMLUListElement} listEl - #todo-list
+ */
+async function handleDeleteTodo(id, listEl) {
+  todos = todos.filter((t) => t.id !== id);
+  await saveTodosAndRender(listEl);
+}
+
+/**
+ * 开始行内编辑：该 li 内 .todo-text 变为 input，焦点并选中
+ * @param {HTMLLIElement} li - 当前列表项
+ * @param {string} currentText - 当前文案
+ * @param {HTMLUListElement} listEl - #todo-list 容器
+ */
+function startEdit(li, currentText, listEl) {
+  const textSpan = li.querySelector(".todo-text");
+  if (!textSpan || textSpan.tagName === "INPUT") return;
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "todo-edit-input";
+  input.value = currentText;
+  input.dataset.id = li.dataset.id;
+
+  const cancelEdit = () => {
+    renderTodos(listEl, sortedTodos(todos));
+  };
+
+  input.addEventListener("blur", () => {
+    const id = li.dataset.id;
+    const item = todos.find((t) => t.id === id);
+    const originalText = (item?.text ?? "").trim();
+    const newText = (input.value ?? "").trim();
+    if (newText !== originalText) {
+      if (item) item.text = newText || item.text;
+      saveTodosAndRender(listEl);
+    } else {
+      cancelEdit();
+    }
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      input.blur();
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      cancelEdit();
+    }
+  });
+
+  textSpan.replaceWith(input);
+  input.focus();
+  input.select();
+}
+
+/**
+ * 勾选/取消勾选：更新该项 done，save_todos，重渲染（li 的 class done 由 render 根据 done 设置）
+ * @param {string} id - todo.id
+ * @param {boolean} done - 新的完成状态
+ * @param {HTMLUListElement} listEl - #todo-list
+ */
+async function handleToggleDone(id, done, listEl) {
+  const item = todos.find((t) => t.id === id);
+  if (item) {
+    item.done = !!done;
+    await saveTodosAndRender(listEl);
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   const listEl = document.querySelector("#todo-list");
+  const form = document.querySelector("#add-todo-form");
   if (!listEl) return;
+
   loadAndRenderTodos(listEl);
+
+  // 添加：表单 submit 或添加按钮点击
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      handleAddTodo(form, listEl);
+    });
+  }
+
+  // 删除、编辑、勾选：事件委托到 #todo-list
+  listEl.addEventListener("click", (e) => {
+    const deleteBtn = e.target.closest(".todo-delete");
+    const textSpan = e.target.closest(".todo-text");
+    if (deleteBtn) {
+      const id = deleteBtn.dataset.id;
+      if (id) handleDeleteTodo(id, listEl);
+      return;
+    }
+    if (textSpan && textSpan.tagName !== "INPUT") {
+      const li = textSpan.closest("li");
+      const id = li?.dataset?.id;
+      const item = id ? todos.find((t) => t.id === id) : null;
+      if (li && item) startEdit(li, item.text ?? "", listEl);
+    }
+  });
+
+  listEl.addEventListener("change", (e) => {
+    if (e.target.type === "checkbox") {
+      const id = e.target.dataset.id;
+      if (id) handleToggleDone(id, e.target.checked, listEl);
+    }
+  });
 });
