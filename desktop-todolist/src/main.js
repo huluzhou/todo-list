@@ -279,7 +279,13 @@ window.addEventListener("DOMContentLoaded", () => {
           autostartCheckbox.checked = !enabled;
           isUpdating = false;
         });
-        alert("设置开机启动失败: " + e);
+        // 显示更友好的错误提示
+        const errorMsg = String(e);
+        if (errorMsg.includes("权限") || errorMsg.includes("拒绝访问") || errorMsg.includes("os error 5")) {
+          alert("设置开机启动失败：权限不足\n\n请尝试：\n1. 以管理员身份运行应用\n2. 检查防病毒软件是否阻止了注册表访问\n3. 稍后重试");
+        } else {
+          alert("设置开机启动失败: " + errorMsg);
+        }
       }
     });
   }
