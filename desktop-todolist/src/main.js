@@ -1,5 +1,9 @@
 const { invoke } = window.__TAURI__.core;
 
+// 优先使用官方 autostart 插件（走 capability），不可用时回退到 Rust 命令
+const autostartPlugin =
+  window.__TAURI__?.plugins?.autostart ?? window.__TAURI__?.autostart ?? null;
+
 /** 当前内存中的待办列表，load 后赋值，增删改后更新再 save_todos */
 let todos = [];
 
@@ -222,11 +226,21 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 开机启动开关：使用 Tauri autostart 插件（通过 Rust 命令）
+  // 开机启动开关：优先用官方插件 API（走 capability），否则走 Rust 命令
   const autostartCheckbox = document.querySelector("#autostart-checkbox");
   if (autostartCheckbox) {
-    // 加载时同步状态
-    invoke("is_autostart_enabled")
+    const getAutostartEnabled = () =>
+      autostartPlugin
+        ? autostartPlugin.isEnabled()
+        : invoke("is_autostart_enabled");
+    const setAutostartEnabled = (enabled) =>
+      autostartPlugin
+        ? enabled
+          ? autostartPlugin.enable()
+          : autostartPlugin.disable()
+        : invoke("set_autostart", { enabled });
+
+    getAutostartEnabled()
       .then((enabled) => {
         autostartCheckbox.checked = !!enabled;
       })
@@ -234,56 +248,34 @@ window.addEventListener("DOMContentLoaded", () => {
         console.error("查询开机启动状态失败:", e);
         autostartCheckbox.checked = false;
       });
-    
-    // 变更时调用后端
-    let isUpdating = false; // 防止重复触发
+
+    let isUpdating = false;
     autostartCheckbox.addEventListener("change", async (e) => {
-      // 如果正在更新，忽略此次事件
-      if (isUpdating) {
-        return;
-      }
-      
-      // 阻止事件冒泡，避免可能的干扰
+      if (isUpdating) return;
       e.stopPropagation();
       e.preventDefault();
-      
+
       const enabled = autostartCheckbox.checked;
-      console.log("开机启动状态变更:", enabled);
-      
       isUpdating = true;
       try {
-        await invoke("set_autostart", { enabled });
-        console.log("开机启动设置成功");
-        
-        // 设置成功后重新查询状态以确保复选框与实际状态同步
-        const actualEnabled = await invoke("is_autostart_enabled");
-        console.log("查询到的实际状态:", actualEnabled);
-        
-        // 使用 requestAnimationFrame 确保 DOM 更新在下一帧
+        await setAutostartEnabled(enabled);
+        const actualEnabled = await getAutostartEnabled();
         requestAnimationFrame(() => {
           autostartCheckbox.checked = !!actualEnabled;
-          if (actualEnabled !== enabled) {
-            console.warn("开机启动状态不一致: 期望", enabled, "实际", actualEnabled);
-            if (!actualEnabled && enabled) {
-              alert("设置开机启动失败，请检查是否有足够的权限");
-            }
+          if (actualEnabled !== enabled && !actualEnabled && enabled) {
+            const err = "设置开机启动失败，请查看控制台或下方说明";
+            alert(err + "\n\n若为权限问题，可尝试：\n1. 将应用安装到用户目录（勿放在 Program Files）\n2. 暂时关闭杀毒/安全软件对注册表的拦截\n3. 以管理员身份运行一次后再关闭");
           }
           isUpdating = false;
         });
       } catch (e) {
-        console.error("设置开机启动失败:", e);
-        // 失败时回退到之前的状态
+        const raw = e?.message ?? e?.toString?.() ?? String(e);
+        console.error("设置开机启动失败:", raw);
         requestAnimationFrame(() => {
           autostartCheckbox.checked = !enabled;
           isUpdating = false;
         });
-        // 显示更友好的错误提示
-        const errorMsg = String(e);
-        if (errorMsg.includes("权限") || errorMsg.includes("拒绝访问") || errorMsg.includes("access denied")) {
-          alert("设置开机启动失败：权限不足\n\n请尝试：\n1. 以管理员身份运行应用\n2. 检查防病毒软件是否阻止了注册表访问\n3. 稍后重试");
-        } else {
-          alert("设置开机启动失败: " + errorMsg);
-        }
+        alert("设置开机启动失败\n\n原始错误: " + raw + "\n\n可尝试：\n1. 将应用安装到用户目录（勿放在 Program Files）\n2. 暂时关闭杀毒软件对注册表的拦截\n3. 以管理员身份运行一次后再试");
       }
     });
   }
