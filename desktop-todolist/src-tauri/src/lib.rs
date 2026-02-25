@@ -142,10 +142,21 @@ pub fn run() {
                 let _ = main.set_position(PhysicalPosition::new(config.x as f64, config.y as f64));
             }
 
-            // 默认开机启动：首次运行（当前未启用开机启动）时自动启用（仅 Windows）
+            // 默认开机启动：仅在首次运行（window.json 不存在）时自动启用（仅 Windows）
+            // 如果 window.json 已存在，说明不是首次运行，不再自动启用，尊重用户的手动设置
             #[cfg(windows)]
-            if let Ok(false) = autostart::is_autostart_enabled_impl() {
-                let _ = autostart::set_autostart_impl(true);
+            {
+                use std::path::Path;
+                let window_config_path = match storage::window_config_path(app) {
+                    Ok(p) => p,
+                    Err(_) => return Ok(()),
+                };
+                // 仅在 window.json 不存在时（首次运行）才自动启用开机启动
+                if !window_config_path.exists() {
+                    if let Ok(false) = autostart::is_autostart_enabled_impl() {
+                        let _ = autostart::set_autostart_impl(true);
+                    }
+                }
             }
 
             // 监听主窗口位置变化（含拖动结束），防抖后写回 window.json
