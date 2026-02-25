@@ -1,6 +1,16 @@
 //! Windows 开机启动：通过 HKCU\...\Run 注册表添加/移除启动项。
 //! 仅编译于 Windows；非 Windows 由 lib 层返回「仅支持 Windows」。
 
+#[cfg(windows)]
+/// 规范化路径字符串，去除首尾引号和空白，用于比较
+fn normalize_path(path: &str) -> String {
+    path.trim()
+        .trim_start_matches('"')
+        .trim_end_matches('"')
+        .trim()
+        .to_string()
+}
+
 /// 启用或禁用开机启动（仅 Windows 有效）。
 /// - enabled == true：将当前 exe 路径写入 HKCU\...\Run。
 /// - enabled == false：删除 Run 下对应项。
@@ -56,11 +66,6 @@ pub fn is_autostart_enabled_impl() -> Result<bool, String> {
     let exe_str = exe_path
         .to_str()
         .ok_or_else(|| "exe 路径含非法字符".to_string())?;
-    let value = if exe_str.contains(' ') {
-        format!("\"{}\"", exe_str)
-    } else {
-        exe_str.to_string()
-    };
 
     let hkcu = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
     let run_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
@@ -71,7 +76,12 @@ pub fn is_autostart_enabled_impl() -> Result<bool, String> {
     let current: String = run_key
         .get_value(RUN_VALUE_NAME)
         .unwrap_or_default();
-    Ok(current.trim() == value.trim())
+    
+    // 规范化比较：去除引号和空白后比较
+    let normalized_current = normalize_path(&current);
+    let normalized_exe = normalize_path(exe_str);
+    
+    Ok(!normalized_current.is_empty() && normalized_current == normalized_exe)
 }
 
 #[cfg(not(windows))]

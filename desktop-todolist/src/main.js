@@ -235,27 +235,50 @@ window.addEventListener("DOMContentLoaded", () => {
       });
     
     // 变更时调用后端，成功后重新查询状态以确保同步
+    let isUpdating = false; // 防止重复触发
     autostartCheckbox.addEventListener("change", async (e) => {
+      // 如果正在更新，忽略此次事件
+      if (isUpdating) {
+        return;
+      }
+      
       // 阻止事件冒泡，避免可能的干扰
       e.stopPropagation();
+      e.preventDefault();
+      
       const enabled = autostartCheckbox.checked;
       console.log("开机启动状态变更:", enabled);
+      
+      isUpdating = true;
       try {
         await invoke("set_autostart", { enabled });
         console.log("set_autostart 调用成功");
+        
         // 设置成功后重新查询状态以确保复选框与实际状态同步
         // 添加短暂延迟，确保注册表写入完成
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         const actualEnabled = await invoke("is_autostart_enabled");
         console.log("查询到的实际状态:", actualEnabled);
-        autostartCheckbox.checked = !!actualEnabled;
-        if (actualEnabled !== enabled) {
-          console.warn("开机启动状态不一致: 期望", enabled, "实际", actualEnabled);
-        }
+        
+        // 使用 requestAnimationFrame 确保 DOM 更新在下一帧
+        requestAnimationFrame(() => {
+          autostartCheckbox.checked = !!actualEnabled;
+          if (actualEnabled !== enabled) {
+            console.warn("开机启动状态不一致: 期望", enabled, "实际", actualEnabled);
+            if (!actualEnabled && enabled) {
+              alert("设置开机启动失败，请检查是否有足够的权限");
+            }
+          }
+          isUpdating = false;
+        });
       } catch (e) {
         console.error("set_autostart failed:", e);
         // 失败时回退到之前的状态
-        autostartCheckbox.checked = !enabled;
+        requestAnimationFrame(() => {
+          autostartCheckbox.checked = !enabled;
+          isUpdating = false;
+        });
         alert("设置开机启动失败: " + e);
       }
     });
