@@ -1,6 +1,6 @@
 # todo-list
 
-Windows 桌面极简待办应用（Tauri 2 + Vanilla JS），半透明无边框小窗、置顶可切换、开机启动。
+Windows 桌面极简待办应用（Tauri 2 + Vanilla JS），半透明无边框小窗、置顶可切换。
 
 ## 开发与测试
 

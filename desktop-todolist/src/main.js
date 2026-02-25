@@ -1,9 +1,5 @@
 const { invoke } = window.__TAURI__.core;
 
-// 优先使用官方 autostart 插件（走 capability），不可用时回退到 Rust 命令
-const autostartPlugin =
-  window.__TAURI__?.plugins?.autostart ?? window.__TAURI__?.autostart ?? null;
-
 /** 当前内存中的待办列表，load 后赋值，增删改后更新再 save_todos */
 let todos = [];
 
@@ -222,60 +218,6 @@ window.addEventListener("DOMContentLoaded", () => {
         console.error("set_always_on_top failed:", e);
         alwaysOnTop = !alwaysOnTop;
         updatePinButton(btnPin, alwaysOnTop);
-      }
-    });
-  }
-
-  // 开机启动开关：优先用官方插件 API（走 capability），否则走 Rust 命令
-  const autostartCheckbox = document.querySelector("#autostart-checkbox");
-  if (autostartCheckbox) {
-    const getAutostartEnabled = () =>
-      autostartPlugin
-        ? autostartPlugin.isEnabled()
-        : invoke("is_autostart_enabled");
-    const setAutostartEnabled = (enabled) =>
-      autostartPlugin
-        ? enabled
-          ? autostartPlugin.enable()
-          : autostartPlugin.disable()
-        : invoke("set_autostart", { enabled });
-
-    getAutostartEnabled()
-      .then((enabled) => {
-        autostartCheckbox.checked = !!enabled;
-      })
-      .catch((e) => {
-        console.error("查询开机启动状态失败:", e);
-        autostartCheckbox.checked = false;
-      });
-
-    let isUpdating = false;
-    autostartCheckbox.addEventListener("change", async (e) => {
-      if (isUpdating) return;
-      e.stopPropagation();
-      e.preventDefault();
-
-      const enabled = autostartCheckbox.checked;
-      isUpdating = true;
-      try {
-        await setAutostartEnabled(enabled);
-        const actualEnabled = await getAutostartEnabled();
-        requestAnimationFrame(() => {
-          autostartCheckbox.checked = !!actualEnabled;
-          if (actualEnabled !== enabled && !actualEnabled && enabled) {
-            const err = "设置开机启动失败，请查看控制台或下方说明";
-            alert(err + "\n\n若为权限问题，可尝试：\n1. 将应用安装到用户目录（勿放在 Program Files）\n2. 暂时关闭杀毒/安全软件对注册表的拦截\n3. 以管理员身份运行一次后再关闭");
-          }
-          isUpdating = false;
-        });
-      } catch (e) {
-        const raw = e?.message ?? e?.toString?.() ?? String(e);
-        console.error("设置开机启动失败:", raw);
-        requestAnimationFrame(() => {
-          autostartCheckbox.checked = !enabled;
-          isUpdating = false;
-        });
-        alert("设置开机启动失败\n\n原始错误: " + raw + "\n\n可尝试：\n1. 将应用安装到用户目录（勿放在 Program Files）\n2. 暂时关闭杀毒软件对注册表的拦截\n3. 以管理员身份运行一次后再试");
       }
     });
   }

@@ -8,7 +8,6 @@ use std::time::Duration;
 use tauri::Manager;
 use tauri::PhysicalPosition;
 use tauri::WindowEvent;
-use tauri_plugin_autostart::ManagerExt;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -38,24 +37,6 @@ fn start_dragging(app: tauri::AppHandle) -> Result<(), String> {
     main.start_dragging().map_err(|e| e.to_string())
 }
 
-
-/// 设置是否开机启动，使用 Tauri autostart 插件。
-#[tauri::command]
-fn set_autostart(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
-    let autostart_manager = app.autolaunch();
-    if enabled {
-        autostart_manager.enable().map_err(|e: tauri_plugin_autostart::Error| e.to_string())
-    } else {
-        autostart_manager.disable().map_err(|e: tauri_plugin_autostart::Error| e.to_string())
-    }
-}
-
-/// 查询当前是否已启用开机启动。
-#[tauri::command]
-fn is_autostart_enabled(app: tauri::AppHandle) -> Result<bool, String> {
-    let autostart_manager = app.autolaunch();
-    autostart_manager.is_enabled().map_err(|e: tauri_plugin_autostart::Error| e.to_string())
-}
 
 /// 设置主窗口是否始终置顶，并将当前窗口位置与新的 always_on_top 写回 window.json。
 /// 供前端 invoke('set_always_on_top', { body: { enabled } }) 调用。
@@ -106,11 +87,7 @@ fn is_position_valid_on_monitor(
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            None,
-        ))
-        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, start_dragging, set_autostart, is_autostart_enabled, set_always_on_top])
+        .invoke_handler(tauri::generate_handler![greet, load_todos, save_todos, start_dragging, set_always_on_top])
         .setup(|app| {
             // 启动时从 window.json 恢复窗口位置与置顶状态
             let config = match storage::load_window_config(app) {
@@ -150,22 +127,6 @@ pub fn run() {
 
             if valid {
                 let _ = main.set_position(PhysicalPosition::new(config.x as f64, config.y as f64));
-            }
-
-            // 默认开机启动：仅在首次运行（window.json 不存在）时自动启用
-            // 如果 window.json 已存在，说明不是首次运行，不再自动启用，尊重用户的手动设置
-            let window_config_path = match storage::window_config_path(app) {
-                Ok(p) => p,
-                Err(_) => return Ok(()),
-            };
-            // 仅在 window.json 不存在时（首次运行）才自动启用开机启动
-            if !window_config_path.exists() {
-                let autostart_manager = app.autolaunch();
-                if let Ok(false) = autostart_manager.is_enabled() {
-                    let _ = autostart_manager.enable().map_err(|e: tauri_plugin_autostart::Error| {
-                        eprintln!("自动启用开机启动失败: {}", e);
-                    });
-                }
             }
 
             // 监听主窗口位置变化（含拖动结束），防抖后写回 window.json

@@ -86,21 +86,6 @@ body {
   font-weight: 500;
 }
 
-.autostart-label {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #666;
-  cursor: pointer;
-  user-select: none;
-}
-
-.autostart-label input {
-  cursor: pointer;
-}
-
 /* ========== 列表区域（可滚动） ========== */
 #todo-list,
 .todo-list {
@@ -296,10 +281,6 @@ body {
   .btn-pin:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #e8e8e8;
-  }
-
-  .autostart-label {
-    color: #aaa;
   }
 
   #todo-list > li .todo-text,
