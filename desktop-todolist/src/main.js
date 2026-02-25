@@ -179,10 +179,13 @@ function startEdit(li, currentText, listEl) {
  */
 async function handleToggleDone(id, done, listEl) {
   const item = todos.find((t) => t.id === id);
-  if (item) {
-    item.done = !!done;
-    await saveTodosAndRender(listEl);
-  }
+  if (!item) return;
+  item.done = !!done;
+  const sorted = sortedTodos(todos);
+  sorted.forEach((t, i) => {
+    t.order = i;
+  });
+  await saveTodosAndRender(listEl);
 }
 
 /**
