@@ -8,11 +8,15 @@ let alwaysOnTop = true;
 
 /**
  * 按 order 排序后的待办数组（不修改原数组）
+ * 先按 done（未完成在前、已完成在后），再按 order 升序
  * @param {Array<{ id: string, text: string, done: boolean, order: number }>} list
  * @returns {Array}
  */
 function sortedTodos(list) {
-  return [...(list || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  return [...(list || [])].sort((a, b) => {
+    if (a.done !== b.done) return (a.done ? 1 : 0) - (b.done ? 1 : 0);
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
 }
 
 /**
