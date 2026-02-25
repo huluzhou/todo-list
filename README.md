@@ -23,3 +23,7 @@ npm run tauri build
 ```
 
 产物在 `desktop-todolist/src-tauri/target/release/bundle/`。
+
+## License
+
+MIT License，见 [LICENSE](LICENSE)。
