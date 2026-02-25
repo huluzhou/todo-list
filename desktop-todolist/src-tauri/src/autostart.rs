@@ -28,7 +28,7 @@ pub fn set_autostart_impl(enabled: bool) -> Result<(), String> {
 
     let hkcu = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
     let run_path = "Software\\Microsoft\\Windows\\CurrentVersion\\Run";
-    let (run_key, _) = hkcu
+    let run_key = hkcu
         .open_subkey_with_flags(run_path, KEY_SET_VALUE)
         .map_err(|e| format!("打开注册表 Run 键失败: {}", e))?;
 
