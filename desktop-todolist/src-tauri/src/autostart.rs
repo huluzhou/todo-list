@@ -82,9 +82,10 @@ pub fn set_autostart_impl(enabled: bool) -> Result<(), String> {
         match result {
             Ok(_) => return Ok(()),
             Err(e) => {
+                // 在移动之前先获取错误代码
+                let error_code = e.raw_os_error();
                 last_error = Some(e);
                 // 如果是权限错误（错误代码 5），提供更详细的提示
-                let error_code = e.raw_os_error();
                 if error_code == Some(5) {
                     if attempt < MAX_RETRIES - 1 {
                         thread::sleep(Duration::from_millis(RETRY_DELAY_MS * (attempt + 1) as u64));
