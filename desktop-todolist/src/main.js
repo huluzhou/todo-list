@@ -8,11 +8,15 @@ let alwaysOnTop = true;
 
 /**
  * 按 order 排序后的待办数组（不修改原数组）
+ * 先按 done（未完成在前、已完成在后），再按 order 升序
  * @param {Array<{ id: string, text: string, done: boolean, order: number }>} list
  * @returns {Array}
  */
 function sortedTodos(list) {
-  return [...(list || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  return [...(list || [])].sort((a, b) => {
+    if (a.done !== b.done) return (a.done ? 1 : 0) - (b.done ? 1 : 0);
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
 }
 
 /**
@@ -175,10 +179,13 @@ function startEdit(li, currentText, listEl) {
  */
 async function handleToggleDone(id, done, listEl) {
   const item = todos.find((t) => t.id === id);
-  if (item) {
-    item.done = !!done;
-    await saveTodosAndRender(listEl);
-  }
+  if (!item) return;
+  item.done = !!done;
+  const sorted = sortedTodos(todos);
+  sorted.forEach((t, i) => {
+    t.order = i;
+  });
+  await saveTodosAndRender(listEl);
 }
 
 /**
@@ -218,27 +225,6 @@ window.addEventListener("DOMContentLoaded", () => {
         console.error("set_always_on_top failed:", e);
         alwaysOnTop = !alwaysOnTop;
         updatePinButton(btnPin, alwaysOnTop);
-      }
-    });
-  }
-
-  // 开机启动开关：加载时同步状态，变更时调用后端
-  const autostartCheckbox = document.querySelector("#autostart-checkbox");
-  if (autostartCheckbox) {
-    invoke("is_autostart_enabled")
-      .then((enabled) => {
-        autostartCheckbox.checked = !!enabled;
-      })
-      .catch(() => {
-        autostartCheckbox.checked = false;
-      });
-    autostartCheckbox.addEventListener("change", async () => {
-      const enabled = autostartCheckbox.checked;
-      try {
-        await invoke("set_autostart", { enabled });
-      } catch (e) {
-        console.error("set_autostart failed:", e);
-        autostartCheckbox.checked = !enabled;
       }
     });
   }

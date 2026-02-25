@@ -24,7 +24,7 @@ body {
   overflow: hidden;
   box-sizing: border-box;
   /* 半透明背景，与 Tauri 无边框透明窗口配合 */
-  background-color: rgba(255, 255, 255, 0.92);
+  background-color: rgba(255, 255, 255, 0.50);
 }
 
 *,
@@ -84,21 +84,6 @@ body {
   background: rgba(0, 0, 0, 0.08);
   color: #1a1a1a;
   font-weight: 500;
-}
-
-.autostart-label {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #666;
-  cursor: pointer;
-  user-select: none;
-}
-
-.autostart-label input {
-  cursor: pointer;
 }
 
 /* ========== 列表区域（可滚动） ========== */
@@ -278,7 +263,7 @@ body {
 /* ========== 深色主题等效（可选） ========== */
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: rgba(30, 30, 30, 0.92);
+    background-color: rgba(30, 30, 30, 0.50);
   }
 
   :root {
@@ -296,10 +281,6 @@ body {
   .btn-pin:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #e8e8e8;
-  }
-
-  .autostart-label {
-    color: #aaa;
   }
 
   #todo-list > li .todo-text,

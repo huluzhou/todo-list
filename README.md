@@ -1,6 +1,6 @@
 # todo-list
 
-Windows 桌面极简待办应用（Tauri 2 + Vanilla JS），半透明无边框小窗、置顶可切换、开机启动。
+Windows 桌面极简待办应用（Tauri 2 + Vanilla JS），半透明无边框小窗、置顶可切换。
 
 ## 开发与测试
 
@@ -23,3 +23,7 @@ npm run tauri build
 ```
 
 产物在 `desktop-todolist/src-tauri/target/release/bundle/`。
+
+## License
+
+MIT License，见 [LICENSE](LICENSE)。
