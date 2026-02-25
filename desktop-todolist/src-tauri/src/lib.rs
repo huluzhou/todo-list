@@ -8,6 +8,7 @@ use std::time::Duration;
 use tauri::Manager;
 use tauri::PhysicalPosition;
 use tauri::WindowEvent;
+use tauri_plugin_autostart::ManagerExt;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -43,9 +44,9 @@ fn start_dragging(app: tauri::AppHandle) -> Result<(), String> {
 fn set_autostart(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
     let autostart_manager = app.autolaunch();
     if enabled {
-        autostart_manager.enable().map_err(|e| e.to_string())
+        autostart_manager.enable().map_err(|e: tauri_plugin_autostart::Error| e.to_string())
     } else {
-        autostart_manager.disable().map_err(|e| e.to_string())
+        autostart_manager.disable().map_err(|e: tauri_plugin_autostart::Error| e.to_string())
     }
 }
 
@@ -53,7 +54,7 @@ fn set_autostart(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
 #[tauri::command]
 fn is_autostart_enabled(app: tauri::AppHandle) -> Result<bool, String> {
     let autostart_manager = app.autolaunch();
-    autostart_manager.is_enabled().map_err(|e| e.to_string())
+    autostart_manager.is_enabled().map_err(|e: tauri_plugin_autostart::Error| e.to_string())
 }
 
 /// 设置主窗口是否始终置顶，并将当前窗口位置与新的 always_on_top 写回 window.json。
@@ -161,7 +162,9 @@ pub fn run() {
             if !window_config_path.exists() {
                 let autostart_manager = app.autolaunch();
                 if let Ok(false) = autostart_manager.is_enabled() {
-                    let _ = autostart_manager.enable();
+                    let _ = autostart_manager.enable().map_err(|e: tauri_plugin_autostart::Error| {
+                        eprintln!("自动启用开机启动失败: {}", e);
+                    });
                 }
             }
 
