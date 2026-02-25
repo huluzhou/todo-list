@@ -51,17 +51,17 @@ pub fn set_autostart_impl(enabled: bool) -> Result<(), String> {
         .or_else(|_| hkcu.open_subkey_with_flags(run_path, KEY_SET_VALUE))
         .map_err(|e| {
             let error_msg = format!("打开注册表 Run 键失败: {}", e);
-            // 检查是否是权限错误
-            if let Some(io_err) = e.downcast_ref::<io::Error>() {
-                if io_err.raw_os_error() == Some(5) {
-                    return format!("{}。可能是权限不足，请尝试以管理员身份运行应用，或检查防病毒软件是否阻止了注册表访问。", error_msg);
-                }
+            // 检查错误消息中是否包含权限相关的关键词
+            let error_str = error_msg.to_lowercase();
+            if error_str.contains("拒绝访问") || error_str.contains("access denied") || error_str.contains("os error 5") {
+                format!("{}。可能是权限不足，请尝试以管理员身份运行应用，或检查防病毒软件是否阻止了注册表访问。", error_msg)
+            } else {
+                error_msg
             }
-            error_msg
         })?;
 
     // 重试机制：对于权限错误或临时锁定，重试几次
-    let mut last_error = None;
+    let mut last_error: Option<io::Error> = None;
     for attempt in 0..MAX_RETRIES {
         let result = if enabled {
             run_key.set_value(RUN_VALUE_NAME, &value)
@@ -84,14 +84,15 @@ pub fn set_autostart_impl(enabled: bool) -> Result<(), String> {
             Err(e) => {
                 last_error = Some(e);
                 // 如果是权限错误（错误代码 5），提供更详细的提示
-                if let Some(5) = e.raw_os_error() {
+                let error_code = e.raw_os_error();
+                if error_code == Some(5) {
                     if attempt < MAX_RETRIES - 1 {
                         thread::sleep(Duration::from_millis(RETRY_DELAY_MS * (attempt + 1) as u64));
                         continue;
                     } else {
                         return Err(format!(
                             "写入开机启动项失败: {}。\n\n可能的原因：\n1. 权限不足 - 请尝试以管理员身份运行应用\n2. 防病毒软件阻止 - 请检查防病毒软件设置\n3. 注册表被锁定 - 请稍后重试",
-                            last_error.unwrap()
+                            last_error.as_ref().unwrap()
                         ));
                     }
                 } else {
@@ -100,14 +101,14 @@ pub fn set_autostart_impl(enabled: bool) -> Result<(), String> {
                         thread::sleep(Duration::from_millis(RETRY_DELAY_MS * (attempt + 1) as u64));
                         continue;
                     } else {
-                        return Err(format!("写入开机启动项失败: {}", last_error.unwrap()));
+                        return Err(format!("写入开机启动项失败: {}", last_error.as_ref().unwrap()));
                     }
                 }
             }
         }
     }
 
-    Err(format!("写入开机启动项失败: {}", last_error.unwrap()))
+    Err(format!("写入开机启动项失败: {}", last_error.as_ref().unwrap()))
 }
 
 /// 查询当前是否已启用开机启动（仅 Windows：读 Run 键是否存在且值为当前 exe）。

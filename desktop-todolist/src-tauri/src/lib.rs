@@ -146,7 +146,6 @@ pub fn run() {
             // 如果 window.json 已存在，说明不是首次运行，不再自动启用，尊重用户的手动设置
             #[cfg(windows)]
             {
-                use std::path::Path;
                 let window_config_path = match storage::window_config_path(app) {
                     Ok(p) => p,
                     Err(_) => return Ok(()),
