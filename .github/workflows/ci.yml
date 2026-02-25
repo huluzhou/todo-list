@@ -1,0 +1,48 @@
+# CI：Rust 测试 + Tauri 构建验证
+# 应用位于 desktop-todolist/，主要目标平台为 Windows
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  TAURI_PROJECT_PATH: desktop-todolist
+
+jobs:
+  # Windows：Rust 测试 + Tauri 构建（验证 Windows 目标与开机启动等）
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+          cache-dependency-path: desktop-todolist/package-lock.json
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: 安装前端依赖
+        run: npm ci
+        working-directory: desktop-todolist
+
+      - name: Rust 单元测试
+        run: cargo test
+        working-directory: desktop-todolist/src-tauri
+
+      - name: Tauri 构建（Windows）
+        run: npm run tauri build
+        working-directory: desktop-todolist
+
+      - name: 上传 Windows 构建产物（可选）
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: desktop-todolist/src-tauri/target/release/bundle/
