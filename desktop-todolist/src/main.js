@@ -222,7 +222,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 开机启动开关：加载时同步状态，变更时调用后端
+  // 开机启动开关：使用 Tauri autostart 插件（通过 Rust 命令）
   const autostartCheckbox = document.querySelector("#autostart-checkbox");
   if (autostartCheckbox) {
     // 加载时同步状态
@@ -230,11 +230,12 @@ window.addEventListener("DOMContentLoaded", () => {
       .then((enabled) => {
         autostartCheckbox.checked = !!enabled;
       })
-      .catch(() => {
+      .catch((e) => {
+        console.error("查询开机启动状态失败:", e);
         autostartCheckbox.checked = false;
       });
     
-    // 变更时调用后端，成功后重新查询状态以确保同步
+    // 变更时调用后端
     let isUpdating = false; // 防止重复触发
     autostartCheckbox.addEventListener("change", async (e) => {
       // 如果正在更新，忽略此次事件
@@ -252,12 +253,9 @@ window.addEventListener("DOMContentLoaded", () => {
       isUpdating = true;
       try {
         await invoke("set_autostart", { enabled });
-        console.log("set_autostart 调用成功");
+        console.log("开机启动设置成功");
         
         // 设置成功后重新查询状态以确保复选框与实际状态同步
-        // 添加短暂延迟，确保注册表写入完成
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
         const actualEnabled = await invoke("is_autostart_enabled");
         console.log("查询到的实际状态:", actualEnabled);
         
@@ -273,7 +271,7 @@ window.addEventListener("DOMContentLoaded", () => {
           isUpdating = false;
         });
       } catch (e) {
-        console.error("set_autostart failed:", e);
+        console.error("设置开机启动失败:", e);
         // 失败时回退到之前的状态
         requestAnimationFrame(() => {
           autostartCheckbox.checked = !enabled;
@@ -281,7 +279,7 @@ window.addEventListener("DOMContentLoaded", () => {
         });
         // 显示更友好的错误提示
         const errorMsg = String(e);
-        if (errorMsg.includes("权限") || errorMsg.includes("拒绝访问") || errorMsg.includes("os error 5")) {
+        if (errorMsg.includes("权限") || errorMsg.includes("拒绝访问") || errorMsg.includes("access denied")) {
           alert("设置开机启动失败：权限不足\n\n请尝试：\n1. 以管理员身份运行应用\n2. 检查防病毒软件是否阻止了注册表访问\n3. 稍后重试");
         } else {
           alert("设置开机启动失败: " + errorMsg);
