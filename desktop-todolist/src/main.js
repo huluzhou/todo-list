@@ -225,6 +225,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // 开机启动开关：加载时同步状态，变更时调用后端
   const autostartCheckbox = document.querySelector("#autostart-checkbox");
   if (autostartCheckbox) {
+    // 加载时同步状态
     invoke("is_autostart_enabled")
       .then((enabled) => {
         autostartCheckbox.checked = !!enabled;
@@ -232,12 +233,18 @@ window.addEventListener("DOMContentLoaded", () => {
       .catch(() => {
         autostartCheckbox.checked = false;
       });
+    
+    // 变更时调用后端，成功后重新查询状态以确保同步
     autostartCheckbox.addEventListener("change", async () => {
       const enabled = autostartCheckbox.checked;
       try {
         await invoke("set_autostart", { enabled });
+        // 设置成功后重新查询状态以确保复选框与实际状态同步
+        const actualEnabled = await invoke("is_autostart_enabled");
+        autostartCheckbox.checked = !!actualEnabled;
       } catch (e) {
         console.error("set_autostart failed:", e);
+        // 失败时回退到之前的状态
         autostartCheckbox.checked = !enabled;
       }
     });
