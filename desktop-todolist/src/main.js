@@ -8,6 +8,13 @@ let alwaysOnTop = true;
 
 /** 优先级 key 的显示顺序（未完成区内）：紧急重要 > 重要不紧急 > 一般 */
 const PRIORITY_ORDER = { urgent_important: 0, important: 1, normal: 2 };
+
+/** 优先级对应的色点颜色与 tooltip */
+const PRIORITY_DOT = {
+  urgent_important: { color: "#e53e3e", label: "紧急重要" },
+  important:        { color: "#dd6b20", label: "重要不紧急" },
+  normal:           { color: "#a0aec0", label: "一般" },
+};
 function priorityRank(p) {
   return PRIORITY_ORDER[p] ?? PRIORITY_ORDER.normal;
 }
@@ -54,22 +61,14 @@ function renderTodos(listEl, list) {
     checkbox.checked = !!todo.done;
     checkbox.dataset.id = todo.id;
 
-    const prioritySelect = document.createElement("select");
-    prioritySelect.className = "todo-priority";
-    prioritySelect.dataset.id = todo.id;
-    prioritySelect.title = "优先级";
-    const currentPriority = todo.priority ?? "normal";
-    for (const [value, label] of [
-      ["urgent_important", "紧急重要"],
-      ["important", "重要不紧急"],
-      ["normal", "一般"],
-    ]) {
-      const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = label;
-      if (value === currentPriority) opt.selected = true;
-      prioritySelect.appendChild(opt);
-    }
+    const p = todo.priority ?? "normal";
+    const dotCfg = PRIORITY_DOT[p] ?? PRIORITY_DOT.normal;
+    const priorityBtn = document.createElement("button");
+    priorityBtn.type = "button";
+    priorityBtn.className = "todo-priority-dot";
+    priorityBtn.dataset.id = todo.id;
+    priorityBtn.title = dotCfg.label;
+    priorityBtn.style.backgroundColor = dotCfg.color;
 
     const textSpan = document.createElement("span");
     textSpan.className = "todo-text";
@@ -82,7 +81,7 @@ function renderTodos(listEl, list) {
     deleteBtn.dataset.id = todo.id;
 
     li.appendChild(checkbox);
-    li.appendChild(prioritySelect);
+    li.appendChild(priorityBtn);
     li.appendChild(textSpan);
     li.appendChild(deleteBtn);
     listEl.appendChild(li);
@@ -291,13 +290,26 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 删除、编辑、勾选：事件委托到 #todo-list
+  // 删除、编辑、勾选、优先级色点：事件委托到 #todo-list
   listEl.addEventListener("click", (e) => {
     const deleteBtn = e.target.closest(".todo-delete");
     const textSpan = e.target.closest(".todo-text");
     if (deleteBtn) {
       const id = deleteBtn.dataset.id;
       if (id) handleDeleteTodo(id, listEl);
+      return;
+    }
+    // 色点点击：循环切换优先级
+    const dotBtn = e.target.closest(".todo-priority-dot");
+    if (dotBtn) {
+      const id = dotBtn.dataset.id;
+      if (!id) return;
+      const item = todos.find((t) => t.id === id);
+      if (!item) return;
+      const cycle = ["urgent_important", "important", "normal"];
+      const cur = cycle.indexOf(item.priority ?? "normal");
+      const next = cycle[(cur + 1) % cycle.length];
+      handleChangePriority(id, next, listEl);
       return;
     }
     if (textSpan && textSpan.tagName !== "INPUT") {
@@ -312,11 +324,6 @@ window.addEventListener("DOMContentLoaded", () => {
     if (e.target.type === "checkbox") {
       const id = e.target.dataset.id;
       if (id) handleToggleDone(id, e.target.checked, listEl);
-      return;
-    }
-    if (e.target.classList.contains("todo-priority")) {
-      const id = e.target.dataset.id;
-      if (id) handleChangePriority(id, e.target.value, listEl);
     }
   });
 });

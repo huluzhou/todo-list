@@ -132,20 +132,32 @@ body {
   cursor: pointer;
 }
 
-/* 列表项内优先级下拉 */
-#todo-list > li .todo-priority,
-.todo-list > li .todo-priority {
+/* 列表项内优先级色点 */
+#todo-list > li .todo-priority-dot,
+.todo-list > li .todo-priority-dot {
   flex-shrink: 0;
-  min-width: 0;
-  width: 88px;
-  height: 24px;
-  padding: 0 4px;
-  font-size: 12px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  background: #fff;
-  color: #1a1a1a;
+  padding: 0;
   cursor: pointer;
+  background-color: #a0aec0;
+  transition: transform 0.1s, box-shadow 0.1s;
+  margin-top: 4px;
+}
+
+#todo-list > li .todo-priority-dot:hover,
+.todo-list > li .todo-priority-dot:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  #todo-list > li .todo-priority-dot,
+  .todo-list > li .todo-priority-dot {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
 }
 
 /* 文案区域：长文案换行，不撑破窗口 */
