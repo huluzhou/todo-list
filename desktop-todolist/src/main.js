@@ -6,15 +6,24 @@ let todos = [];
 /** 当前是否始终置顶（与 window.json 一致，默认 true；后端无查询接口，由前端记录） */
 let alwaysOnTop = true;
 
+/** 优先级 key 的显示顺序（未完成区内）：紧急重要 > 重要不紧急 > 一般 */
+const PRIORITY_ORDER = { urgent_important: 0, important: 1, normal: 2 };
+function priorityRank(p) {
+  return PRIORITY_ORDER[p] ?? PRIORITY_ORDER.normal;
+}
+
 /**
  * 按 order 排序后的待办数组（不修改原数组）
- * 先按 done（未完成在前、已完成在后），再按 order 升序
- * @param {Array<{ id: string, text: string, done: boolean, order: number }>} list
+ * 先按 done（未完成在前、已完成在后），再在未完成区内按 priority，再按 order 升序（同组内旧在上、新在下）
+ * @param {Array<{ id: string, text: string, done: boolean, order: number, priority?: string }>} list
  * @returns {Array}
  */
 function sortedTodos(list) {
   return [...(list || [])].sort((a, b) => {
     if (a.done !== b.done) return (a.done ? 1 : 0) - (b.done ? 1 : 0);
+    const pa = priorityRank(a.priority ?? "normal");
+    const pb = priorityRank(b.priority ?? "normal");
+    if (pa !== pb) return pa - pb;
     return (a.order ?? 0) - (b.order ?? 0);
   });
 }
@@ -45,6 +54,23 @@ function renderTodos(listEl, list) {
     checkbox.checked = !!todo.done;
     checkbox.dataset.id = todo.id;
 
+    const prioritySelect = document.createElement("select");
+    prioritySelect.className = "todo-priority";
+    prioritySelect.dataset.id = todo.id;
+    prioritySelect.title = "优先级";
+    const currentPriority = todo.priority ?? "normal";
+    for (const [value, label] of [
+      ["urgent_important", "紧急重要"],
+      ["important", "重要不紧急"],
+      ["normal", "一般"],
+    ]) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      if (value === currentPriority) opt.selected = true;
+      prioritySelect.appendChild(opt);
+    }
+
     const textSpan = document.createElement("span");
     textSpan.className = "todo-text";
     textSpan.textContent = todo.text ?? "";
@@ -56,6 +82,7 @@ function renderTodos(listEl, list) {
     deleteBtn.dataset.id = todo.id;
 
     li.appendChild(checkbox);
+    li.appendChild(prioritySelect);
     li.appendChild(textSpan);
     li.appendChild(deleteBtn);
     listEl.appendChild(li);
@@ -102,11 +129,18 @@ async function handleAddTodo(form, listEl) {
   const text = (input?.value ?? "").trim();
   if (!text) return;
 
+  const priorityEl = form.querySelector("#add-todo-priority");
+  const priority =
+    priorityEl?.value && PRIORITY_ORDER[priorityEl.value] !== undefined
+      ? priorityEl.value
+      : "normal";
+
   const newTodo = {
     id: crypto.randomUUID(),
     text,
     done: false,
     order: todos.length,
+    priority,
   };
   todos.push(newTodo);
   await saveTodosAndRender(listEl);
@@ -118,6 +152,24 @@ async function handleAddTodo(form, listEl) {
  * @param {string} id - todo.id
  * @param {HTMLUListElement} listEl - #todo-list
  */
+/**
+ * 修改优先级：更新该项 priority，按新顺序重赋 order，保存并重渲染
+ * @param {string} id - todo.id
+ * @param {string} newPriority - 新的 priority 值
+ * @param {HTMLUListElement} listEl - #todo-list
+ */
+async function handleChangePriority(id, newPriority, listEl) {
+  const item = todos.find((t) => t.id === id);
+  if (!item) return;
+  if (PRIORITY_ORDER[newPriority] === undefined) return;
+  item.priority = newPriority;
+  const sorted = sortedTodos(todos);
+  sorted.forEach((t, i) => {
+    t.order = i;
+  });
+  await saveTodosAndRender(listEl);
+}
+
 async function handleDeleteTodo(id, listEl) {
   todos = todos.filter((t) => t.id !== id);
   await saveTodosAndRender(listEl);
@@ -260,6 +312,11 @@ window.addEventListener("DOMContentLoaded", () => {
     if (e.target.type === "checkbox") {
       const id = e.target.dataset.id;
       if (id) handleToggleDone(id, e.target.checked, listEl);
+      return;
+    }
+    if (e.target.classList.contains("todo-priority")) {
+      const id = e.target.dataset.id;
+      if (id) handleChangePriority(id, e.target.value, listEl);
     }
   });
 });

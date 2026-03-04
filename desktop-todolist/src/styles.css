@@ -132,6 +132,22 @@ body {
   cursor: pointer;
 }
 
+/* 列表项内优先级下拉 */
+#todo-list > li .todo-priority,
+.todo-list > li .todo-priority {
+  flex-shrink: 0;
+  min-width: 0;
+  width: 88px;
+  height: 24px;
+  padding: 0 4px;
+  font-size: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
 /* 文案区域：长文案换行，不撑破窗口 */
 #todo-list > li .todo-text,
 #todo-list > li span,
@@ -237,6 +253,19 @@ body {
 #add-todo-input:focus {
   outline: none;
   border-color: #396cd8;
+}
+
+#add-todo-priority {
+  flex-shrink: 0;
+  width: 88px;
+  height: 32px;
+  padding: 0 6px;
+  font-size: 13px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: #fff;
+  color: #1a1a1a;
+  cursor: pointer;
 }
 
 #add-todo-btn {

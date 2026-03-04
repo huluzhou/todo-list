@@ -8,13 +8,15 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime};
 
-/// 单条待办，与设计一致：id、文案、完成状态、排序。
+/// 单条待办，与设计一致：id、文案、完成状态、排序、优先级。
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Todo {
     pub id: String,
     pub text: String,
     pub done: bool,
     pub order: u32,
+    /// 优先级，缺省为 "normal"。
+    pub priority: String,
 }
 
 /// 反序列化时允许缺字段，用 Option + default 补全。
@@ -28,6 +30,8 @@ struct TodoRaw {
     done: Option<bool>,
     #[serde(default)]
     order: Option<u32>,
+    #[serde(default)]
+    priority: Option<String>,
 }
 
 /// 窗口配置：位置与置顶偏好，对应 `window.json`。
@@ -55,6 +59,9 @@ struct WindowConfigRaw {
 
 /// 应用数据目录下 `todos.json` 的文件名。
 pub const TODOS_FILENAME: &str = "todos.json";
+
+/// 旧数据缺 priority 时的默认优先级。
+pub(crate) const DEFAULT_PRIORITY: &str = "normal";
 
 /// 应用数据目录下 `window.json` 的文件名。
 pub const WINDOW_FILENAME: &str = "window.json";
@@ -132,6 +139,7 @@ pub fn load_todos(app: AppHandle) -> Result<Vec<Todo>, String> {
             text: r.text.unwrap_or_default(),
             done: r.done.unwrap_or(false),
             order: r.order.unwrap_or(i as u32),
+            priority: r.priority.unwrap_or_else(|| DEFAULT_PRIORITY.to_string()),
         })
         .collect();
     Ok(todos)
@@ -194,6 +202,11 @@ pub fn save_window_config<M: Manager<R>, R: Runtime>(app: &M, config: &WindowCon
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn default_priority_is_normal() {
+        assert_eq!(super::DEFAULT_PRIORITY, "normal");
+    }
 
     #[test]
     fn todos_json_path_in_dir_ends_with_todos_json() {
