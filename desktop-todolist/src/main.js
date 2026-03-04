@@ -21,8 +21,8 @@ function priorityRank(p) {
 function sortedTodos(list) {
   return [...(list || [])].sort((a, b) => {
     if (a.done !== b.done) return (a.done ? 1 : 0) - (b.done ? 1 : 0);
-    const pa = priorityRank(a.priority);
-    const pb = priorityRank(b.priority);
+    const pa = priorityRank(a.priority ?? "normal");
+    const pb = priorityRank(b.priority ?? "normal");
     if (pa !== pb) return pa - pb;
     return (a.order ?? 0) - (b.order ?? 0);
   });
