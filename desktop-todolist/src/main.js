@@ -6,15 +6,24 @@ let todos = [];
 /** 当前是否始终置顶（与 window.json 一致，默认 true；后端无查询接口，由前端记录） */
 let alwaysOnTop = true;
 
+/** 优先级 key 的显示顺序（未完成区内）：紧急重要 > 重要不紧急 > 一般 */
+const PRIORITY_ORDER = { urgent_important: 0, important: 1, normal: 2 };
+function priorityRank(p) {
+  return PRIORITY_ORDER[p] ?? PRIORITY_ORDER.normal;
+}
+
 /**
  * 按 order 排序后的待办数组（不修改原数组）
- * 先按 done（未完成在前、已完成在后），再按 order 升序
- * @param {Array<{ id: string, text: string, done: boolean, order: number }>} list
+ * 先按 done（未完成在前、已完成在后），再在未完成区内按 priority，再按 order 升序（同组内旧在上、新在下）
+ * @param {Array<{ id: string, text: string, done: boolean, order: number, priority?: string }>} list
  * @returns {Array}
  */
 function sortedTodos(list) {
   return [...(list || [])].sort((a, b) => {
     if (a.done !== b.done) return (a.done ? 1 : 0) - (b.done ? 1 : 0);
+    const pa = priorityRank(a.priority);
+    const pb = priorityRank(b.priority);
+    if (pa !== pb) return pa - pb;
     return (a.order ?? 0) - (b.order ?? 0);
   });
 }
