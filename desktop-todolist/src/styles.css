@@ -267,17 +267,41 @@ body {
   border-color: #396cd8;
 }
 
-#add-todo-priority {
+/* 添加表单优先级色点组 */
+.priority-dot-group {
   flex-shrink: 0;
-  width: 88px;
-  height: 32px;
-  padding: 0 6px;
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.priority-dot-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
-  background: #fff;
-  color: #1a1a1a;
+  padding: 0;
   cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.priority-dot-btn:hover {
+  transform: scale(1.2);
+}
+
+/* 选中态：outline 描边，深浅背景均有效 */
+.priority-dot-btn.is-selected {
+  outline: 2px solid rgba(0, 0, 0, 0.35);
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .priority-dot-btn {
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  .priority-dot-btn.is-selected {
+    outline-color: rgba(255, 255, 255, 0.5);
+  }
 }
 
 #add-todo-btn {

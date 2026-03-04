@@ -128,10 +128,10 @@ async function handleAddTodo(form, listEl) {
   const text = (input?.value ?? "").trim();
   if (!text) return;
 
-  const priorityEl = form.querySelector("#add-todo-priority");
+  const selectedDot = form.querySelector(".priority-dot-btn.is-selected");
   const priority =
-    priorityEl?.value && PRIORITY_ORDER[priorityEl.value] !== undefined
-      ? priorityEl.value
+    selectedDot?.dataset?.priority && PRIORITY_ORDER[selectedDot.dataset.priority] !== undefined
+      ? selectedDot.dataset.priority
       : "normal";
 
   const newTodo = {
@@ -281,6 +281,19 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   loadAndRenderTodos(listEl);
+
+  // 添加表单优先级色点：点击切换选中
+  if (form) {
+    const priorityGroup = form.querySelector("#add-todo-priority-group");
+    if (priorityGroup) {
+      priorityGroup.addEventListener("click", (e) => {
+        const dotBtn = e.target.closest(".priority-dot-btn");
+        if (!dotBtn) return;
+        priorityGroup.querySelectorAll(".priority-dot-btn").forEach((b) => b.classList.remove("is-selected"));
+        dotBtn.classList.add("is-selected");
+      });
+    }
+  }
 
   // 添加：表单 submit 或添加按钮点击
   if (form) {

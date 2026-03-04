@@ -26,11 +26,14 @@
         placeholder="添加待办"
         autocomplete="off"
       />
-      <select id="add-todo-priority" title="优先级" aria-label="优先级">
-        <option value="urgent_important">紧急重要</option>
-        <option value="important">重要不紧急</option>
-        <option value="normal" selected>一般</option>
-      </select>
+      <div id="add-todo-priority-group" class="priority-dot-group" role="group" aria-label="优先级">
+        <button type="button" class="priority-dot-btn" data-priority="urgent_important"
+          title="紧急重要" style="background-color:#e53e3e;"></button>
+        <button type="button" class="priority-dot-btn" data-priority="important"
+          title="重要不紧急" style="background-color:#dd6b20;"></button>
+        <button type="button" class="priority-dot-btn is-selected" data-priority="normal"
+          title="一般" style="background-color:#a0aec0;"></button>
+      </div>
       <button type="submit" id="add-todo-btn">添加</button>
     </form>
   </body>
