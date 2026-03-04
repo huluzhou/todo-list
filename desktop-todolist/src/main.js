@@ -111,11 +111,18 @@ async function handleAddTodo(form, listEl) {
   const text = (input?.value ?? "").trim();
   if (!text) return;
 
+  const priorityEl = form.querySelector("#add-todo-priority");
+  const priority =
+    priorityEl?.value && PRIORITY_ORDER[priorityEl.value] !== undefined
+      ? priorityEl.value
+      : "normal";
+
   const newTodo = {
     id: crypto.randomUUID(),
     text,
     done: false,
     order: todos.length,
+    priority,
   };
   todos.push(newTodo);
   await saveTodosAndRender(listEl);
