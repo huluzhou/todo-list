@@ -54,6 +54,23 @@ function renderTodos(listEl, list) {
     checkbox.checked = !!todo.done;
     checkbox.dataset.id = todo.id;
 
+    const prioritySelect = document.createElement("select");
+    prioritySelect.className = "todo-priority";
+    prioritySelect.dataset.id = todo.id;
+    prioritySelect.title = "优先级";
+    const currentPriority = todo.priority ?? "normal";
+    for (const [value, label] of [
+      ["urgent_important", "紧急重要"],
+      ["important", "重要不紧急"],
+      ["normal", "一般"],
+    ]) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = label;
+      if (value === currentPriority) opt.selected = true;
+      prioritySelect.appendChild(opt);
+    }
+
     const textSpan = document.createElement("span");
     textSpan.className = "todo-text";
     textSpan.textContent = todo.text ?? "";
@@ -65,6 +82,7 @@ function renderTodos(listEl, list) {
     deleteBtn.dataset.id = todo.id;
 
     li.appendChild(checkbox);
+    li.appendChild(prioritySelect);
     li.appendChild(textSpan);
     li.appendChild(deleteBtn);
     listEl.appendChild(li);
@@ -134,6 +152,24 @@ async function handleAddTodo(form, listEl) {
  * @param {string} id - todo.id
  * @param {HTMLUListElement} listEl - #todo-list
  */
+/**
+ * 修改优先级：更新该项 priority，按新顺序重赋 order，保存并重渲染
+ * @param {string} id - todo.id
+ * @param {string} newPriority - 新的 priority 值
+ * @param {HTMLUListElement} listEl - #todo-list
+ */
+async function handleChangePriority(id, newPriority, listEl) {
+  const item = todos.find((t) => t.id === id);
+  if (!item) return;
+  if (PRIORITY_ORDER[newPriority] === undefined) return;
+  item.priority = newPriority;
+  const sorted = sortedTodos(todos);
+  sorted.forEach((t, i) => {
+    t.order = i;
+  });
+  await saveTodosAndRender(listEl);
+}
+
 async function handleDeleteTodo(id, listEl) {
   todos = todos.filter((t) => t.id !== id);
   await saveTodosAndRender(listEl);
@@ -276,6 +312,11 @@ window.addEventListener("DOMContentLoaded", () => {
     if (e.target.type === "checkbox") {
       const id = e.target.dataset.id;
       if (id) handleToggleDone(id, e.target.checked, listEl);
+      return;
+    }
+    if (e.target.classList.contains("todo-priority")) {
+      const id = e.target.dataset.id;
+      if (id) handleChangePriority(id, e.target.value, listEl);
     }
   });
 });
