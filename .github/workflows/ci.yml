@@ -34,6 +34,7 @@ jobs:
         working-directory: desktop-todolist
 
       - name: 校验前端包含优先级逻辑
+        shell: bash
         run: |
           grep -q 'PRIORITY_ORDER' desktop-todolist/src/main.js && \
           grep -q 'todo.priority\|\.priority' desktop-todolist/src/main.js || exit 1
