@@ -211,9 +211,7 @@ body {
 
 /* 删除按钮 */
 #todo-list > li .todo-delete,
-#todo-list > li button,
-.todo-list > li .todo-delete,
-.todo-list > li button {
+.todo-list > li .todo-delete {
   flex-shrink: 0;
   min-width: 24px;
   height: 24px;
@@ -227,14 +225,14 @@ body {
   transition: background 0.15s, color 0.15s;
 }
 
-#todo-list > li button:hover,
-.todo-list > li button:hover {
+#todo-list > li .todo-delete:hover,
+.todo-list > li .todo-delete:hover {
   background: rgba(200, 60, 60, 0.12);
   color: #c03030;
 }
 
-#todo-list > li button:active,
-.todo-list > li button:active {
+#todo-list > li .todo-delete:active,
+.todo-list > li .todo-delete:active {
   background: rgba(200, 60, 60, 0.2);
 }
 
@@ -392,5 +390,17 @@ body {
   #add-todo-btn:hover {
     border-color: #6b9aff;
     color: #6b9aff;
+  }
+
+  /* 深色背景下删除按钮提高对比度 */
+  #todo-list > li .todo-delete,
+  .todo-list > li .todo-delete {
+    color: #bbb;
+  }
+
+  #todo-list > li .todo-delete:hover,
+  .todo-list > li .todo-delete:hover {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
   }
 }
