@@ -136,27 +136,30 @@ body {
 #todo-list > li .todo-priority-dot,
 .todo-list > li .todo-priority-dot {
   flex-shrink: 0;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: none;
   padding: 0;
   cursor: pointer;
-  background-color: #a0aec0;
-  transition: transform 0.1s, box-shadow 0.1s;
-  margin-top: 4px;
+  background-color: #94a3b8;
+  transition: transform 0.15s, opacity 0.15s;
+  margin-top: 5px;
+  align-self: flex-start;
 }
 
 #todo-list > li .todo-priority-dot:hover,
 .todo-list > li .todo-priority-dot:hover {
-  transform: scale(1.3);
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  transform: scale(1.5);
+  opacity: 0.85;
 }
 
 @media (prefers-color-scheme: dark) {
   #todo-list > li .todo-priority-dot,
   .todo-list > li .todo-priority-dot {
-    border-color: rgba(255, 255, 255, 0.25);
+    opacity: 0.9;
   }
 }
 
@@ -276,31 +279,33 @@ body {
 }
 
 .priority-dot-btn {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.15);
+  border: none;
   padding: 0;
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: transform 0.15s, opacity 0.15s;
+  opacity: 0.55;
 }
 
 .priority-dot-btn:hover {
-  transform: scale(1.2);
+  transform: scale(1.4);
+  opacity: 0.85;
 }
 
-/* 选中态：outline 描边，深浅背景均有效 */
+/* 选中态：不透明 + 轻微放大 */
 .priority-dot-btn.is-selected {
-  outline: 2px solid rgba(0, 0, 0, 0.35);
-  outline-offset: 2px;
+  opacity: 1;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 0 3.5px rgba(0, 0, 0, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
-  .priority-dot-btn {
-    border-color: rgba(255, 255, 255, 0.25);
-  }
   .priority-dot-btn.is-selected {
-    outline-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 2px rgba(30, 30, 30, 0.9), 0 0 0 3.5px rgba(255, 255, 255, 0.35);
   }
 }
 

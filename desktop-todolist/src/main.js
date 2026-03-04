@@ -11,9 +11,9 @@ const PRIORITY_ORDER = { urgent_important: 0, important: 1, normal: 2 };
 
 /** 优先级对应的色点颜色与 tooltip */
 const PRIORITY_DOT = {
-  urgent_important: { color: "#e53e3e", label: "紧急重要" },
-  important:        { color: "#dd6b20", label: "重要不紧急" },
-  normal:           { color: "#a0aec0", label: "一般" },
+  urgent_important: { color: "#ef4444", label: "紧急重要" },
+  important:        { color: "#f97316", label: "重要不紧急" },
+  normal:           { color: "#94a3b8", label: "一般" },
 };
 function priorityRank(p) {
   return PRIORITY_ORDER[p] ?? PRIORITY_ORDER.normal;
