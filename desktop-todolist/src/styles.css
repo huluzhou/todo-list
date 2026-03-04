@@ -132,20 +132,35 @@ body {
   cursor: pointer;
 }
 
-/* 列表项内优先级下拉 */
-#todo-list > li .todo-priority,
-.todo-list > li .todo-priority {
+/* 列表项内优先级色点 */
+#todo-list > li .todo-priority-dot,
+.todo-list > li .todo-priority-dot {
   flex-shrink: 0;
-  min-width: 0;
-  width: 88px;
-  height: 24px;
-  padding: 0 4px;
-  font-size: 12px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-  background: #fff;
-  color: #1a1a1a;
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  background-color: #94a3b8;
+  transition: transform 0.15s, opacity 0.15s;
+  margin-top: 5px;
+  align-self: flex-start;
+}
+
+#todo-list > li .todo-priority-dot:hover,
+.todo-list > li .todo-priority-dot:hover {
+  transform: scale(1.5);
+  opacity: 0.85;
+}
+
+@media (prefers-color-scheme: dark) {
+  #todo-list > li .todo-priority-dot,
+  .todo-list > li .todo-priority-dot {
+    opacity: 0.9;
+  }
 }
 
 /* 文案区域：长文案换行，不撑破窗口 */
@@ -196,9 +211,7 @@ body {
 
 /* 删除按钮 */
 #todo-list > li .todo-delete,
-#todo-list > li button,
-.todo-list > li .todo-delete,
-.todo-list > li button {
+.todo-list > li .todo-delete {
   flex-shrink: 0;
   min-width: 24px;
   height: 24px;
@@ -207,19 +220,21 @@ body {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #888;
+  color: #666;
+  /* 双向 text-shadow 保证在透明窗口置于深色或浅色背景上均清晰 */
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, text-shadow 0.15s;
 }
 
-#todo-list > li button:hover,
-.todo-list > li button:hover {
+#todo-list > li .todo-delete:hover,
+.todo-list > li .todo-delete:hover {
   background: rgba(200, 60, 60, 0.12);
   color: #c03030;
 }
 
-#todo-list > li button:active,
-.todo-list > li button:active {
+#todo-list > li .todo-delete:active,
+.todo-list > li .todo-delete:active {
   background: rgba(200, 60, 60, 0.2);
 }
 
@@ -255,17 +270,43 @@ body {
   border-color: #396cd8;
 }
 
-#add-todo-priority {
+/* 添加表单优先级色点组 */
+.priority-dot-group {
   flex-shrink: 0;
-  width: 88px;
-  height: 32px;
-  padding: 0 6px;
-  font-size: 13px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 6px;
-  background: #fff;
-  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.priority-dot-btn {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
   cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+  opacity: 0.55;
+}
+
+.priority-dot-btn:hover {
+  transform: scale(1.4);
+  opacity: 0.85;
+}
+
+/* 选中态：不透明 + 轻微放大 */
+.priority-dot-btn.is-selected {
+  opacity: 1;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 0 3.5px rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  .priority-dot-btn.is-selected {
+    box-shadow: 0 0 0 2px rgba(30, 30, 30, 0.9), 0 0 0 3.5px rgba(255, 255, 255, 0.35);
+  }
 }
 
 #add-todo-btn {
@@ -351,5 +392,17 @@ body {
   #add-todo-btn:hover {
     border-color: #6b9aff;
     color: #6b9aff;
+  }
+
+  /* 深色背景下删除按钮提高对比度 */
+  #todo-list > li .todo-delete,
+  .todo-list > li .todo-delete {
+    color: #bbb;
+  }
+
+  #todo-list > li .todo-delete:hover,
+  .todo-list > li .todo-delete:hover {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
   }
 }
